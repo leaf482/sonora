@@ -8,6 +8,18 @@ Go is one modular monolith/process: identity (users/sessions), catalog (artists/
 
 PostgreSQL stores metadata, provenance fields, constraints, sessions and user state; never audio blobs. Immutable audio files live outside public/static roots under generated storage keys. Operator import/withdrawal commands reuse catalog/media services; no public upload/admin API. Task 1 selects a licensed original format compatible with browsers; no transcoding pipeline.
 
+## Implemented backend foundation (Task 2)
+
+The Go module lives at `backend/` with executable sources/tests in `backend/cmd/server/` (module `github.com/leaf482/sonora/backend`, Go 1.25+). This is the only implemented service. The domain modules and other runtime components above remain planned; no empty domain packages are scaffolded.
+
+- `PORT` defaults to 8080 only when unset. If present, it must contain decimal digits and resolve to 1–65535; empty, signed, whitespace-padded, out-of-range and overflowing values fail startup. The listener binds all local interfaces on that port.
+- `GET /health` returns 200, `Content-Type: application/json`, and `{"status":"ok"}`. It is a non-versioned process-liveness endpoint, not database/storage readiness. Standard Go routing also accepts HEAD without a body, rejects other methods with 405, and leaves unknown paths at 404.
+- JSON structured logs go to stdout for startup, normal shutdown and fatal failures; standard HTTP server errors use the same logger. Request-ID/access logging remains future work.
+- HTTP timeouts: read headers 5s, total request read 10s, response write 10s, idle keep-alive 60s. These are for the health-only server; reassess response deadlines before implementing long audio streams.
+- Ctrl+C (and SIGTERM on Unix) stops new accepts and allows active requests up to 10s to finish using a separate shutdown context. On expiry, active connections are force-closed and the process reports an error/nonzero exit. Successful draining exits normally. Request contexts are not prematurely canceled by the signal itself.
+
+Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). This bootstrap has no database, authentication, audio serving, frontend, Docker or external Go dependencies.
+
 ## API boundaries
 
 All endpoints below are prefixed /api/v1. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.

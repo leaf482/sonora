@@ -4,7 +4,7 @@
 
 Sonora is an original music streaming and discovery web app, with consumer-quality UX and a small, understandable backend. Discovery means browsing and searching a curated licensed catalog, not personalized recommendations or a Spotify replica.
 
-Task 0 found an empty repository containing only Git metadata, with no commits or implementation. These documents describe planned behavior. See [architecture](ARCHITECTURE.md), [domain](DOMAIN_MODEL.md), [workflow](DEVELOPMENT_WORKFLOW.md), and [roadmap](TASKS.md).
+Task 0 found an empty repository containing only Git metadata, with no commits or implementation. Product features below remain planned. The implemented baseline is the health-only Go backend described in [ARCHITECTURE.md](ARCHITECTURE.md). See [architecture](ARCHITECTURE.md), [domain](DOMAIN_MODEL.md), [workflow](DEVELOPMENT_WORKFLOW.md), and [roadmap](TASKS.md).
 
 ## MVP
 
