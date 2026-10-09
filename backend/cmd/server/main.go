@@ -29,6 +29,15 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	if cfg.database != nil {
+		db, err := openDatabase(ctx, cfg.database, cfg.databaseTimeout)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		logger.Info("database connected")
+	}
+
 	listener, err := net.Listen("tcp", net.JoinHostPort("", strconv.Itoa(cfg.port)))
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)

@@ -23,7 +23,7 @@ Reviewer receives the brief, complete change including untracked content, baseli
 - Capture git status --short before/after; inspect tracked and untracked changes. Never discard unrelated work.
 - Always run git diff --check and git status --short. Diff excludes untracked documents; inspect and whitespace-check them separately without staging.
 - For docs: confirm required files exist, relative links resolve, terminology/API/domain rules agree and statuses are accurate. Task 0 needs no application build.
-- The Go bootstrap commands are recorded below. Frontend/PostgreSQL/browser commands will be added when those components exist; do not claim checks for unimplemented components.
+- The Go bootstrap commands are recorded below. PostgreSQL setup and the live smoke procedure are in [POSTGRESQL.md](POSTGRESQL.md). Frontend/browser commands will be added when those components exist; do not claim checks for unimplemented components.
 - Use disposable databases/storage and rights-documented fixtures; no destructive verification against user/production data. Keep secrets, private data and unapproved media out of reports/commits.
 - A blocked audio gate prevents dependent ingestion/public playback; only explicitly independent work may continue. Record missing evidence; never invent permission.
 
@@ -33,7 +33,7 @@ NOT STARTED: no work begun. IN PROGRESS: the single selected task, including dev
 
 ## Local Go backend commands
 
-Prerequisite: Go 1.25 or newer (bootstrap verified with Go 1.25.4). No third-party modules or other services are required. The module is [backend/go.mod](../backend/go.mod). All Go commands below run from `backend/`, not the repository root.
+Prerequisite: Go 1.25 or newer (bootstrap verified with Go 1.25.4). The pgx PostgreSQL driver is pinned in go.mod/go.sum. No running database is required when DATABASE_URL is unset; configured database startup is covered in [POSTGRESQL.md](POSTGRESQL.md). The module is [backend/go.mod](../backend/go.mod). All Go commands below run from `backend/`, not the repository root.
 
 PowerShell, starting at the repository root:
 
@@ -75,6 +75,6 @@ go vet ./...
 go build ./...
 ```
 
-`gofmt -l` should print nothing; apply formatting with `gofmt -w cmd/server` when needed. Tests cover health JSON/method/path behavior, PORT defaults/errors, real HTTP request draining, forced close on shutdown deadline, cancellation before serving, and listener failure. Lifecycle tests use loopback ephemeral ports and synchronized events; no database or media is touched.
+`gofmt -l` should print nothing; apply formatting with `gofmt -w cmd/server` when needed. Tests cover health JSON/method/path behavior, PORT defaults/errors, real HTTP request draining, forced close on shutdown deadline, cancellation before serving, and listener failure. Lifecycle tests use loopback ephemeral ports and synchronized events; ordinary tests need no database and do not touch media. The explicit SONORA_TEST_DATABASE_URL opt-in enables the separate disposable PostgreSQL test; see [POSTGRESQL.md](POSTGRESQL.md).
 
 Then inspect tracked and untracked changes and run `git diff --check` and `git status --short` from the repository root. Build/test caches are toolchain output; do not stage generated executables.

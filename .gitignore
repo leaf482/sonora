@@ -1,0 +1,4 @@
+# Local configuration and credentials; examples contain no working password.
+.env
+.env.*
+!.env.example

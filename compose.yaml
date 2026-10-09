@@ -1,0 +1,20 @@
+name: sonora
+services:
+  postgres:
+    image: postgres:17.11-alpine3.23
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sonora}
+      POSTGRES_USER: ${POSTGRES_USER:-sonora}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local POSTGRES_PASSWORD in your environment or .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 15
+      start_period: 10s
+volumes:
+  postgres_data:

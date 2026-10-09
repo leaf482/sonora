@@ -18,7 +18,13 @@ The Go module lives at `backend/` with executable sources/tests in `backend/cmd/
 - HTTP timeouts: read headers 5s, total request read 10s, response write 10s, idle keep-alive 60s. These are for the health-only server; reassess response deadlines before implementing long audio streams.
 - Ctrl+C (and SIGTERM on Unix) stops new accepts and allows active requests up to 10s to finish using a separate shutdown context. On expiry, active connections are force-closed and the process reports an error/nonzero exit. Successful draining exits normally. Request contexts are not prematurely canceled by the signal itself.
 
-Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). This bootstrap has no database, authentication, audio serving, frontend, Docker or external Go dependencies.
+Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Task 2 remains the HTTP foundation; Task 3 adds only the local PostgreSQL environment and connection lifecycle described below. Authentication, audio serving, frontend and domain services remain unimplemented.
+
+## PostgreSQL development connectivity (Task 3)
+
+[compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves health-only startup. GET /health remains liveness, not dependency readiness.
+
+Connection setup stays in backend/cmd/server/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. There are no migrations, application tables, repositories or application queries yet. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
 ## API boundaries
 
