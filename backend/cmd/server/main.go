@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/leaf482/sonora/backend/internal/postgres"
 )
 
 func main() {
@@ -30,7 +32,7 @@ func run(logger *slog.Logger) error {
 	defer stop()
 
 	if cfg.database != nil {
-		db, err := openDatabase(ctx, cfg.database, cfg.databaseTimeout)
+		db, err := postgres.Open(ctx, cfg.database, cfg.databaseTimeout)
 		if err != nil {
 			return err
 		}

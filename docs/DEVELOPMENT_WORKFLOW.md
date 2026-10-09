@@ -23,7 +23,7 @@ Reviewer receives the brief, complete change including untracked content, baseli
 - Capture git status --short before/after; inspect tracked and untracked changes. Never discard unrelated work.
 - Always run git diff --check and git status --short. Diff excludes untracked documents; inspect and whitespace-check them separately without staging.
 - For docs: confirm required files exist, relative links resolve, terminology/API/domain rules agree and statuses are accurate. Task 0 needs no application build.
-- The Go bootstrap commands are recorded below. PostgreSQL setup and the live smoke procedure are in [POSTGRESQL.md](POSTGRESQL.md). Frontend/browser commands will be added when those components exist; do not claim checks for unimplemented components.
+- The Go bootstrap commands are recorded below. PostgreSQL setup and the live smoke procedure are in [POSTGRESQL.md](POSTGRESQL.md). Explicit SQL migration commands and disposable apply/status verification are in [MIGRATIONS.md](MIGRATIONS.md). Frontend/browser commands will be added when those components exist; do not claim checks for unimplemented components.
 - Use disposable databases/storage and rights-documented fixtures; no destructive verification against user/production data. Keep secrets, private data and unapproved media out of reports/commits.
 - A blocked audio gate prevents dependent ingestion/public playback; only explicitly independent work may continue. Record missing evidence; never invent permission.
 
@@ -69,12 +69,12 @@ On Unix, build to `bin/sonora` and execute `./bin/sonora`; SIGTERM also requests
 Required checks, from `backend/`:
 
 ```powershell
-gofmt -l cmd/server
+gofmt -l cmd internal
 go test ./...
 go vet ./...
 go build ./...
 ```
 
-`gofmt -l` should print nothing; apply formatting with `gofmt -w cmd/server` when needed. Tests cover health JSON/method/path behavior, PORT defaults/errors, real HTTP request draining, forced close on shutdown deadline, cancellation before serving, and listener failure. Lifecycle tests use loopback ephemeral ports and synchronized events; ordinary tests need no database and do not touch media. The explicit SONORA_TEST_DATABASE_URL opt-in enables the separate disposable PostgreSQL test; see [POSTGRESQL.md](POSTGRESQL.md).
+`gofmt -l` should print nothing; apply formatting with `gofmt -w cmd internal` when needed. Tests cover health JSON/method/path behavior, PORT defaults/errors, real HTTP request draining, forced close on shutdown deadline, cancellation before serving, and listener failure. Lifecycle tests use loopback ephemeral ports and synchronized events; ordinary tests need no database and do not touch media. The explicit SONORA_TEST_DATABASE_URL opt-in enables the separate disposable PostgreSQL test; see [POSTGRESQL.md](POSTGRESQL.md).
 
 Then inspect tracked and untracked changes and run `git diff --check` and `git status --short` from the repository root. Build/test caches are toolchain output; do not stage generated executables.

@@ -1,4 +1,4 @@
-package main
+package postgres
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 )
 
-func parseDatabaseURL(raw string) (*pgx.ConnConfig, error) {
+func ParseURL(raw string) (*pgx.ConnConfig, error) {
 	invalid := errors.New("DATABASE_URL must be a valid postgres or postgresql URL with a host, user and database")
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") ||
@@ -29,7 +30,7 @@ func parseDatabaseURL(raw string) (*pgx.ConnConfig, error) {
 	return cfg, nil
 }
 
-func openDatabase(ctx context.Context, cfg *pgx.ConnConfig, timeout time.Duration) (*sql.DB, error) {
+func Open(ctx context.Context, cfg *pgx.ConnConfig, timeout time.Duration) (*sql.DB, error) {
 	db := stdlib.OpenDB(*cfg)
 	db.SetMaxOpenConns(5)
 	db.SetMaxIdleConns(2)
@@ -46,4 +47,16 @@ func openDatabase(ctx context.Context, cfg *pgx.ConnConfig, timeout time.Duratio
 		return nil, errors.New("database startup ping failed; check PostgreSQL availability, credentials and DATABASE_URL")
 	}
 	return db, nil
+}
+
+// ConnectTimeout reads the same startup timeout for the server and migration command.
+func ConnectTimeout() (time.Duration, error) {
+	if raw, set := os.LookupEnv("DB_CONNECT_TIMEOUT"); set {
+		timeout, err := time.ParseDuration(raw)
+		if err != nil || timeout <= 0 || timeout > 30*time.Second {
+			return 0, errors.New("DB_CONNECT_TIMEOUT must be a duration greater than zero and at most 30s")
+		}
+		return timeout, nil
+	}
+	return 5 * time.Second, nil
 }

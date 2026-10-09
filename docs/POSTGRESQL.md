@@ -1,6 +1,6 @@
 # Local PostgreSQL development
 
-Task 3 adds only a database process and backend connectivity. No migrations, application tables, repositories or application SQL are included. `GET /health` remains process liveness: 200 with `{"status":"ok"}`; it does not ping PostgreSQL on each request or become a readiness endpoint.
+Task 3 adds only a database process and backend connectivity. Task 4 adds the separate [migration workflow](MIGRATIONS.md); no application tables, repositories or application SQL are included. `GET /health` remains process liveness: 200 with `{"status":"ok"}`; it does not ping PostgreSQL on each request or become a readiness endpoint.
 
 ## Configuration
 
@@ -18,7 +18,7 @@ Backend variables:
 - `DB_CONNECT_TIMEOUT`: default `5s`; positive Go duration up to `30s`. Bounds initial connect/authentication/ping using the signal context. Invalid values fail configuration even when DATABASE_URL is unset.
 - `PORT`: HTTP port; existing semantics/default 8080 unchanged.
 
-The backend uses `database/sql` with the pgx v5 driver, pinned in [go.mod](../backend/go.mod) / [go.sum](../backend/go.sum). Five indirect dependencies come from that driver; no ORM, retry framework or general database abstraction is introduced. The pool allows at most five open/two idle connections. A configured database must pass its startup ping before HTTP binds. Failed setup closes the pool and exits nonzero with a credential-free error; successful setup closes it after the existing HTTP shutdown completes. No URL/password or raw driver/server error is logged. An outage after startup does not change liveness; readiness and runtime database behavior are separate future work.
+The backend uses `database/sql` with the pgx v5 driver, pinned in [go.mod](../backend/go.mod) / [go.sum](../backend/go.sum). Additional migration-tool dependencies are described in [MIGRATIONS.md](MIGRATIONS.md); no ORM, retry framework or general database abstraction is introduced. The pool allows at most five open/two idle connections. A configured database must pass its startup ping before HTTP binds. Failed setup closes the pool and exits nonzero with a credential-free error; successful setup closes it after the existing HTTP shutdown completes. No URL/password or raw driver/server error is logged. An outage after startup does not change liveness; readiness and runtime database behavior are separate future work.
 
 For this loopback-only development service, use `sslmode=disable`. For another environment, select and configure its actual TLS policy (for example `verify-full`); do not reuse the local setting as a production default. The image's initialization user is a local development superuser, not a production least-privilege application role.
 

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/leaf482/sonora/backend/internal/postgres"
 )
 
 func TestDatabaseStartupTimeout(t *testing.T) {
@@ -29,12 +31,12 @@ func TestDatabaseStartupTimeout(t *testing.T) {
 		// Accept TCP, but never finish the PostgreSQL handshake.
 		_, _ = io.Copy(io.Discard, conn)
 	}()
-	cfg, err := parseDatabaseURL("postgres://test:secret@" + listener.Addr().String() + "/test?sslmode=disable")
+	cfg, err := postgres.ParseURL("postgres://test:secret@" + listener.Addr().String() + "/test?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 	start := time.Now()
-	db, err := openDatabase(context.Background(), cfg, 50*time.Millisecond)
+	db, err := postgres.Open(context.Background(), cfg, 50*time.Millisecond)
 	if db != nil || !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("expected nil DB and deadline, got db=%v err=%v", db != nil, err)
 	}
@@ -46,13 +48,13 @@ func TestDatabaseStartupTimeout(t *testing.T) {
 }
 
 func TestDatabaseStartupCancellation(t *testing.T) {
-	cfg, err := parseDatabaseURL("postgres://test:secret@127.0.0.1:5432/test?sslmode=disable")
+	cfg, err := postgres.ParseURL("postgres://test:secret@127.0.0.1:5432/test?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	db, err := openDatabase(ctx, cfg, time.Second)
+	db, err := postgres.Open(ctx, cfg, time.Second)
 	if db != nil || !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected nil DB and cancellation, got db=%v err=%v", db != nil, err)
 	}
@@ -73,11 +75,11 @@ func TestDatabaseStartupFailureDoesNotExposeCredentials(t *testing.T) {
 		}
 	}()
 	const secret = "do-not-log-this-password"
-	cfg, err := parseDatabaseURL("postgres://test:" + secret + "@" + listener.Addr().String() + "/test?sslmode=disable")
+	cfg, err := postgres.ParseURL("postgres://test:" + secret + "@" + listener.Addr().String() + "/test?sslmode=disable")
 	if err != nil {
 		t.Fatal(err)
 	}
-	db, err := openDatabase(context.Background(), cfg, time.Second)
+	db, err := postgres.Open(context.Background(), cfg, time.Second)
 	if db != nil || err == nil {
 		t.Fatal("expected failed startup")
 	}
@@ -94,11 +96,11 @@ func TestPostgresLive(t *testing.T) {
 	if !set {
 		t.Skip("set SONORA_TEST_DATABASE_URL to a disposable PostgreSQL database")
 	}
-	cfg, err := parseDatabaseURL(raw)
+	cfg, err := postgres.ParseURL(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	db, err := openDatabase(context.Background(), cfg, 5*time.Second)
+	db, err := postgres.Open(context.Background(), cfg, 5*time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,11 +114,11 @@ func TestPostgresLive(t *testing.T) {
 	// Verify authentication failure too; no application SQL or schema changes.
 	u, _ := url.Parse(raw)
 	u.User = url.UserPassword(u.User.Username(), "deliberately-wrong-smoke-password")
-	bad, err := parseDatabaseURL(u.String())
+	bad, err := postgres.ParseURL(u.String())
 	if err != nil {
 		t.Fatal(err)
 	}
-	unexpected, err := openDatabase(context.Background(), bad, 5*time.Second)
+	unexpected, err := postgres.Open(context.Background(), bad, 5*time.Second)
 	if unexpected != nil {
 		_ = unexpected.Close()
 		t.Fatal("wrong password was accepted; use a password-authenticated disposable database")

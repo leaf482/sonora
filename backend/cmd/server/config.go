@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/leaf482/sonora/backend/internal/postgres"
 )
 
 type config struct {
@@ -16,7 +17,7 @@ type config struct {
 }
 
 func loadConfig() (config, error) {
-	cfg := config{port: 8080, databaseTimeout: 5 * time.Second}
+	cfg := config{port: 8080}
 	if raw, set := os.LookupEnv("PORT"); set {
 		invalid := errors.New("PORT must be a decimal integer between 1 and 65535")
 		if raw == "" {
@@ -33,16 +34,14 @@ func loadConfig() (config, error) {
 		}
 		cfg.port = port
 	}
-	if raw, set := os.LookupEnv("DB_CONNECT_TIMEOUT"); set {
-		timeout, err := time.ParseDuration(raw)
-		if err != nil || timeout <= 0 || timeout > 30*time.Second {
-			return config{}, errors.New("DB_CONNECT_TIMEOUT must be a duration greater than zero and at most 30s")
-		}
-		cfg.databaseTimeout = timeout
+	var err error
+	cfg.databaseTimeout, err = postgres.ConnectTimeout()
+	if err != nil {
+		return config{}, err
 	}
 	if raw, set := os.LookupEnv("DATABASE_URL"); set {
 		var err error
-		cfg.database, err = parseDatabaseURL(raw)
+		cfg.database, err = postgres.ParseURL(raw)
 		if err != nil {
 			return config{}, err
 		}
