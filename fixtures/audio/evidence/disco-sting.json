@@ -1,0 +1,17 @@
+{
+  "source_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100363",
+  "observed_at_utc": "2026-10-09T08:23:41.1136499Z",
+  "http_status": 200,
+  "evidence_type": "Selected live catalog facts plus the individual detail-page attribution template; not a full-page archive",
+  "catalog_url": "https://incompetech.com/music/royalty-free/pieces.json",
+  "title": "Disco Sting",
+  "isrc": "USUAN1100363",
+  "original_filename": "Disco Sting.mp3",
+  "creator": "Kevin MacLeod",
+  "license_name": "Creative Commons Attribution 4.0 International",
+  "license_href_as_observed": "http://creativecommons.org/licenses/by/4.0/",
+  "download_url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Disco%20Sting.mp3",
+  "attribution_notice": "Disco Sting Kevin MacLeod (incompetech.com). Licensed under Creative Commons: By Attribution 4.0 License. http://creativecommons.org/licenses/by/4.0/",
+  "binding_method": "The detail page loads pieces.json, selects the requested ISRC, inserts its title into the attribution notice, and derives the download URL from its filename. Confirmed both catalog record and page template live.",
+  "reviewer": "Codex Dev; independent review pending"
+}

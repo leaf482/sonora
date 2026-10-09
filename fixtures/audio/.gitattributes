@@ -1,0 +1,6 @@
+# Keep hash-pinned provenance and license bytes stable across checkouts.
+*.json text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
+.gitattributes text eol=lf
+*.mp3 -text

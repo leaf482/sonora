@@ -6,11 +6,11 @@ Browser -> same-origin Next.js UI and /api/v1 Go API -> PostgreSQL metadata/stat
 
 Go is one modular monolith/process: identity (users/sessions), catalog (artists/albums/tracks/eligibility), media (validation/byte serving), library, playlists, and history. HTTP handlers validate transport input, application services enforce rules/transactions, and repositories use parameterized SQL. Cross-module operations use explicit service functions. No broker, Redis, microservices, HLS, CDN or speculative infrastructure.
 
-PostgreSQL stores metadata, provenance fields, constraints, sessions and user state; never audio blobs. Immutable audio files live outside public/static roots under generated storage keys. Operator import/withdrawal commands reuse catalog/media services; no public upload/admin API. Task 2 selects a licensed original format compatible with browsers; no transcoding pipeline.
+PostgreSQL stores metadata, provenance fields, constraints, sessions and user state; never audio blobs. Immutable audio files live outside public/static roots under generated storage keys. Operator import/withdrawal commands reuse catalog/media services; no public upload/admin API. Task 1 selects a licensed original format compatible with browsers; no transcoding pipeline.
 
 ## API boundaries
 
-All endpoints below are prefixed /api/v1. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 2 verifies the intended audience/use; otherwise revise the contract before release.
+All endpoints below are prefixed /api/v1. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
 
 - POST /auth/register, /auth/login, /auth/logout; GET /me. Opaque expiring database-backed sessions; logout revokes the session.
 - GET /artists, /artists/{id}, /albums, /albums/{id}, /tracks, /tracks/{id}; GET /search?q=... for grouped track/artist/album matches. Return safe credits/license links and stream URLs, not disk paths or private evidence.

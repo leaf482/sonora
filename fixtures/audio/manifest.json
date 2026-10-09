@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "purpose": "Small Sonora development fixtures; not a production catalog or ingestion allowlist",
+  "verified_on": "2026-10-09",
+  "verified_by": "Codex Dev; independent reviewer verdict pending",
+  "fixture_rights_decision": "verified_for_stated_uses",
+  "production_release_gate": "pending_browser_validation_and_deployment_review",
+  "path_base": "fixtures/audio",
+  "licenses": [
+    {
+      "id": "CC0-1.0",
+      "name": "CC0 1.0 Universal",
+      "version": "1.0",
+      "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "legal_code_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.en",
+      "text_path": "licenses/CC0-1.0.txt",
+      "text_download_url": "https://creativecommons.org/publicdomain/zero/1.0/legalcode.txt",
+      "permitted_uses": [
+        "local storage",
+        "browser playback and public communication",
+        "redistribution of audio fixtures in source repositories and archives",
+        "commercial and noncommercial use",
+        "modification"
+      ],
+      "conditions": [
+        "Courtesy credit retained by Sonora; CC0 does not require attribution.",
+        "Do not imply endorsement. Third-party, patent and trademark rights are not cleared by this dedication."
+      ],
+      "territory": "Worldwide to the extent of the affirmer's rights and applicable law",
+      "term": "Permanent waiver with fallback license; no fixed expiry"
+    },
+    {
+      "id": "CC-BY-4.0",
+      "name": "Creative Commons Attribution 4.0 International",
+      "version": "4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/",
+      "legal_code_url": "https://creativecommons.org/licenses/by/4.0/legalcode.en",
+      "text_path": "licenses/CC-BY-4.0.txt",
+      "text_download_url": "https://creativecommons.org/licenses/by/4.0/legalcode.txt",
+      "permitted_uses": [
+        "local storage",
+        "browser playback and public communication",
+        "redistribution of audio fixtures in source repositories and archives",
+        "commercial and noncommercial use",
+        "modification with change disclosure"
+      ],
+      "conditions": [
+        "Retain creator credit, supplied notices, source and license links; disclose changes.",
+        "Keep the adjacent README credits and license text with fixture distributions.",
+        "For playback, make the track credit and source/license links readily accessible.",
+        "No added legal or technical restrictions on recipients' licensed rights; no endorsement claim."
+      ],
+      "territory": "Worldwide within the licensor's licensed rights",
+      "term": "Copyright/similar-rights term; compliance required; see section 6",
+      "limitations": "Does not clear unrelated third-party/personality/patent/trademark rights or non-waivable royalties. Public deployment requires its own scope review.",
+      "text_preparation": "Remove trailing blank lines only; license wording unchanged.",
+      "original_text_sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+    }
+  ],
+  "assets": [
+    {
+      "id": "pong",
+      "title": "Pong",
+      "creator": "yesme",
+      "source_provider": "OpenGameArt.org",
+      "source_url": "https://opengameart.org/content/pong-0",
+      "license_evidence_url": "https://opengameart.org/content/pong-0",
+      "license_id": "CC0-1.0",
+      "evidence_path": "evidence/pong-0.json",
+      "download_url": "https://opengameart.org/sites/default/files/pong.mp3",
+      "acquired_at_utc": "2026-10-09T08:19:54.6894484Z",
+      "original_filename": "pong.mp3",
+      "original_bytes": 237912,
+      "original_sha256": "1a68804c47954e26c59a8edb882a5d56e27b91f7afe9b4fadff9097cb8a9b104",
+      "path": "pong.mp3",
+      "bytes": 237912,
+      "sha256": "1a68804c47954e26c59a8edb882a5d56e27b91f7afe9b4fadff9097cb8a9b104",
+      "preparation": "none",
+      "modifications": "None; source bytes unchanged.",
+      "attribution": "Pong by yesme. Source: https://opengameart.org/content/pong-0 . CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/ . Unmodified; courtesy credit.",
+      "media_type": "audio/mpeg",
+      "codec": "MPEG-1 Layer III",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frame_count": 585,
+      "frame_duration_seconds": 14.04,
+      "status": "included"
+    },
+    {
+      "id": "gustav-sting",
+      "title": "Gustav Sting",
+      "creator": "Kevin MacLeod",
+      "source_provider": "Incompetech (creator's site)",
+      "source_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100529",
+      "license_evidence_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100529",
+      "source_id": "USUAN1100529",
+      "license_id": "CC-BY-4.0",
+      "evidence_path": "evidence/gustav-sting.json",
+      "download_url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Gustav%20Sting.mp3",
+      "acquired_at_utc": "2026-10-09T08:22:05.9120942Z",
+      "original_filename": "Gustav Sting.mp3",
+      "original_bytes": 793114,
+      "original_sha256": "7ab3f6a0537b3311a2b00de971d282af49c75f33e832e0e775d2e56b69f7ef69",
+      "path": "gustav-sting.mp3",
+      "bytes": 730776,
+      "sha256": "8c3aa8f3c80164578bd1f5d37858c6702e5689def9e2a530c03b318762746cac",
+      "preparation": "remove-id3v22-pic",
+      "modifications": "Removed one embedded PIC image and zero padding; recalculated ID3 size. Other ID3 frames and MPEG audio bytes unchanged. Local filename normalized. No trimming or transcoding.",
+      "mpeg_audio_sha256": "7bbb9220189be344d1381de9dbff49475181327938e4f98a811091de29763727",
+      "attribution": "Gustav Sting by Kevin MacLeod (incompetech.com). Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100529 . Licensed under Creative Commons Attribution 4.0 International: https://creativecommons.org/licenses/by/4.0/ . Changes: embedded picture and ID3 padding removed; audio unchanged.",
+      "media_type": "audio/mpeg",
+      "codec": "MPEG-1 Layer III",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "frame_count": 699,
+      "frame_duration_seconds": 18.26,
+      "status": "included"
+    },
+    {
+      "id": "disco-sting",
+      "title": "Disco Sting",
+      "creator": "Kevin MacLeod",
+      "source_provider": "Incompetech (creator's site)",
+      "source_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100363",
+      "license_evidence_url": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100363",
+      "source_id": "USUAN1100363",
+      "license_id": "CC-BY-4.0",
+      "evidence_path": "evidence/disco-sting.json",
+      "download_url": "https://incompetech.com/music/royalty-free/mp3-royaltyfree/Disco%20Sting.mp3",
+      "acquired_at_utc": "2026-10-09T08:22:07.7737811Z",
+      "original_filename": "Disco Sting.mp3",
+      "original_bytes": 720014,
+      "original_sha256": "88dd6ba250a9890f6b0077cd42e6ac250a586d8107b09f27a54bea5466dcba3f",
+      "path": "disco-sting.mp3",
+      "bytes": 657651,
+      "sha256": "60986a388edf6d4c0681963fc6413b3267be877f6c91061675080b08c96343ee",
+      "preparation": "remove-id3v22-pic",
+      "modifications": "Removed one embedded PIC image and zero padding; recalculated ID3 size. Other ID3 frames and MPEG audio bytes unchanged. Local filename normalized. No trimming or transcoding.",
+      "mpeg_audio_sha256": "88319bc4e83e8baef0d164c140c469f77a337730d2dce0b364367983d8b40aef",
+      "attribution": "Disco Sting by Kevin MacLeod (incompetech.com). Source: https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100363 . Licensed under Creative Commons Attribution 4.0 International: https://creativecommons.org/licenses/by/4.0/ . Changes: embedded picture and ID3 padding removed; audio unchanged.",
+      "media_type": "audio/mpeg",
+      "codec": "MPEG-1 Layer III",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "frame_count": 629,
+      "frame_duration_seconds": 16.431,
+      "status": "included"
+    }
+  ],
+  "retained_files": [
+    {
+      "path": "evidence/pong-0.json",
+      "bytes": 654,
+      "sha256": "81521dfec0e58701df8dc3df90ae5f1921903811490d279fa10995bed2593499"
+    },
+    {
+      "path": "evidence/gustav-sting.json",
+      "bytes": 1210,
+      "sha256": "5966830b02c514bf0447eb42c15dc95e34d121e4acae1b22d30e77b6d6157e36"
+    },
+    {
+      "path": "evidence/disco-sting.json",
+      "bytes": 1206,
+      "sha256": "ac836cd3e00c134a441f183d20c37b5c7d514e1d8094f5b266be60ae79ad0813"
+    },
+    {
+      "path": "licenses/CC0-1.0.txt",
+      "bytes": 7048,
+      "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
+    },
+    {
+      "path": "licenses/CC-BY-4.0.txt",
+      "bytes": 18656,
+      "sha256": "9e5f1b3c610b9c2da5c313bf81d577a7d1acec686bdb0384edefa6df0f90cd94"
+    }
+  ]
+}

@@ -2,7 +2,7 @@
 
 ## Delivery loop
 
-**PM -> Codex Dev -> independent read-only Reviewer -> user commits.** One scoped task at a time. [TASKS.md](TASKS.md) is the status source. Task 0 remains in progress until independent review and user acceptance; planned features are not completed work.
+**PM -> Codex Dev -> independent read-only Reviewer -> user commits.** One scoped task at a time. [TASKS.md](TASKS.md) is the status source. Only the user-selected task is actively in progress. Delivered work with no recorded reviewer verdict is awaiting review, not an inferred PASS; planned features are not completed work.
 
 1. **PM:** select a task with satisfied dependencies and provide objective, scope, non-goals, acceptance criteria, documents and checks. Split work exceeding a few hours before expanding implementation. Identify unresolved licensing/product decisions.
 2. **Codex Dev:** inspect instructions, status and existing work; preserve unrelated edits; implement only selected scope and update relevant docs. Run proportionate checks and report changed files, results, limitations, status and suggested commit message. Do not stage or commit.
@@ -29,4 +29,4 @@ Reviewer receives the brief, complete change including untracked content, baseli
 
 ## Status meanings
 
-NOT STARTED: no work begun. IN PROGRESS: the single selected task, including development/review. BLOCKED: a named dependency/decision prevents acceptance. DONE: independent PASS and user acceptance. Update deliberately.
+NOT STARTED: no work begun. IN PROGRESS: the single selected task, including development/review. AWAITING REVIEW: work is delivered, but the independent verdict is not recorded. BLOCKED: a named dependency/decision prevents acceptance. DONE: independent PASS and user acceptance. Update deliberately.

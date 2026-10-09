@@ -22,9 +22,9 @@ Spotify/YouTube ripping; unlicensed audio; ML recommendations; Kafka; Redis; Kub
 
 ## Audio policy and early feasibility gate
 
-Only assets with verified applicable licenses and documented attribution may enter the playable catalog. Jamendo and Free Music Archive (FMA) are candidates, **not preapproved ingestion sources**. A free download or provider-wide label does not establish Sonora's permissions. Task 0 approves no source, individual track, or legal interpretation.
+Only assets with verified applicable licenses and documented attribution may enter the playable catalog. Jamendo and Free Music Archive (FMA) are candidates, **not preapproved ingestion sources**. A free download or provider-wide label does not establish Sonora's permissions. Task 0 approved no source, individual track, or legal interpretation. Task 1 records a narrowly scoped fixture decision in [LICENSED_AUDIO.md](LICENSED_AUDIO.md); it does not approve a provider catalog or complete the public-release gate.
 
-Task 2 must record evidence for the exact assets and intended deployment:
+Task 1 must record evidence for the exact assets and intended deployment:
 
 - Source provider, original page/download reference, creator and relevant rights-holder credits, acquisition time, and checksum of the exact file.
 - License name/version/URL, retained permission evidence, verification date, reviewer and rationale.
@@ -45,7 +45,7 @@ Open decisions: eligible individual assets/sources; public/private deployment au
 
 ## MVP acceptance criteria
 
-- Task 2 is PASS for the actual audience/use; at least three approved tracks play with retained provenance and visible required attribution. Unapproved/withdrawn media cannot start a new stream.
+- Task 1 is PASS for the actual audience/use; at least three approved tracks play with retained provenance and visible required attribution. Unapproved/withdrawn media cannot start a new stream.
 - Fresh setup, migrations, approved import, and Go/Next.js/PostgreSQL startup are reproducible from instructions.
 - Play/pause and forward/backward seek work in current stable Chrome, Firefox and Safari where verification is available; explicitly report untested browsers. Range semantics have integration coverage. Network/media errors are recoverable.
 - Search returns matching tracks/artists/albums with bounded pagination and useful empty states; public discovery excludes unavailable tracks.
