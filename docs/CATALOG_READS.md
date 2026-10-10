@@ -17,9 +17,11 @@ Artists order by name COLLATE "C", then UUID ascending. Albums order by title CO
 
 Missing valid UUIDs return ErrNotFound, detected with errors.Is. Invalid UUID syntax is a database error, not not-found. All SQL is fixed and parameters bind IDs, limits and offsets. No caller-provided SQL fragments are accepted.
 
-QueryRowContext/QueryContext propagate the caller's context. The repository does not choose a new deadline; callers should provide one. Cancellation/deadline failures support errors.Is(err, context.Canceled/DeadlineExceeded), including driver cancellation errors. Other query, scan and iteration failures are wrapped with operation context, preserving their causes. Lists close rows and check rows.Err; errors discard any partial result. Errors are internal diagnostics and must be sanitized by future HTTP handlers rather than serialized directly.
+QueryRowContext/QueryContext propagate the caller's context. The repository does not choose a new deadline; callers should provide one. Cancellation/deadline failures support errors.Is(err, context.Canceled/DeadlineExceeded), including driver cancellation errors. Other query, scan and iteration failures are wrapped with operation context, preserving their causes. Lists close rows and check rows.Err; errors discard any partial result. Errors are internal diagnostics and are sanitized by the Task 9 HTTP handlers rather than serialized directly.
 
 These reads expose persisted artists/albums irrespective of playable tracks. Public visibility rules still require a future service/query change. No Track/AudioAsset queries, writes or public API are part of this repository.
+
+Task 9 exposes this contract through the [Artist/Album HTTP API](CATALOG_API.md), borrowing the existing startup pool.
 
 ## Verify
 

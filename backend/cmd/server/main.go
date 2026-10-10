@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/leaf482/sonora/backend/internal/catalog"
 	"github.com/leaf482/sonora/backend/internal/postgres"
 )
 
@@ -31,12 +32,14 @@ func run(logger *slog.Logger) error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	var repository *catalog.Repository
 	if cfg.database != nil {
 		db, err := postgres.Open(ctx, cfg.database, cfg.databaseTimeout)
 		if err != nil {
 			return err
 		}
 		defer db.Close()
+		repository = catalog.NewRepository(db)
 		logger.Info("database connected")
 	}
 
@@ -45,7 +48,7 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("listen: %w", err)
 	}
 
-	server := newServer(logger)
+	server := newServer(logger, repository)
 	logger.Info("server listening", "address", listener.Addr().String())
 	if err := serve(ctx, server, listener, 10*time.Second); err != nil {
 		return err

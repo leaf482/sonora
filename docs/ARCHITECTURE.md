@@ -2,7 +2,7 @@
 
 ## Runtime and module boundaries
 
-Browser -> same-origin Next.js UI and /api/v1 Go API -> PostgreSQL metadata/state plus a private filesystem audio directory. Next.js owns presentation; Go owns domain rules. Next.js does not access the database or duplicate domain services. Same-origin routing supports cookies and native audio requests; the routing layer must not buffer whole audio bodies.
+Browser -> same-origin Next.js UI and Go API -> PostgreSQL metadata/state plus a private filesystem audio directory. Next.js owns presentation; Go owns domain rules. Next.js does not access the database or duplicate domain services. Same-origin routing supports cookies and native audio requests; the routing layer must not buffer whole audio bodies.
 
 Go is one modular monolith/process: identity (users/sessions), catalog (artists/albums/tracks/eligibility), media (validation/byte serving), library, playlists, and history. HTTP handlers validate transport input, application services enforce rules/transactions, and repositories use parameterized SQL. Cross-module operations use explicit service functions. No broker, Redis, microservices, HLS, CDN or speculative infrastructure.
 
@@ -15,14 +15,14 @@ The Go module lives at `backend/` with executable sources/tests in `backend/cmd/
 - `PORT` defaults to 8080 only when unset. If present, it must contain decimal digits and resolve to 1–65535; empty, signed, whitespace-padded, out-of-range and overflowing values fail startup. The listener binds all local interfaces on that port.
 - `GET /health` returns 200, `Content-Type: application/json`, and `{"status":"ok"}`. It is a non-versioned process-liveness endpoint, not database/storage readiness. Standard Go routing also accepts HEAD without a body, rejects other methods with 405, and leaves unknown paths at 404.
 - JSON structured logs go to stdout for startup, normal shutdown and fatal failures; standard HTTP server errors use the same logger. Request-ID/access logging remains future work.
-- HTTP timeouts: read headers 5s, total request read 10s, response write 10s, idle keep-alive 60s. These are for the health-only server; reassess response deadlines before implementing long audio streams.
+- HTTP timeouts: read headers 5s, total request read 10s, response write 10s, idle keep-alive 60s. These cover health and metadata reads; reassess response deadlines before implementing long audio streams.
 - Ctrl+C (and SIGTERM on Unix) stops new accepts and allows active requests up to 10s to finish using a separate shutdown context. On expiry, active connections are force-closed and the process reports an error/nonzero exit. Successful draining exits normally. Request contexts are not prematurely canceled by the signal itself.
 
 Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Task 2 remains the HTTP foundation; Task 3 adds only the local PostgreSQL environment and connection lifecycle described below. Authentication, audio serving, frontend and domain services remain unimplemented.
 
 ## PostgreSQL development connectivity (Task 3)
 
-[compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves health-only startup. GET /health remains liveness, not dependency readiness.
+[compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves database-free startup; Task 9 catalog routes return JSON 503. GET /health remains liveness, not dependency readiness.
 
 Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; Task 8 adds only Artist/Album repository reads; other runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
@@ -50,14 +50,20 @@ Records start draft/staged with the existing fixture-scope license decision, est
 
 backend/internal/catalog has a concrete Repository borrowing the existing *sql.DB, explicit Artist/Album read models, and four parameterized lookup/list queries. Missing rows are distinct from database failures. Lists use a default limit of 20, maximum 100, nonnegative offset, and name/title ordering with C collation plus UUID tie-breakers. Caller contexts propagate through query/scan/iteration errors and rows are closed.
 
-These internal reads return persisted rows without Track/AudioAsset queries; future public visibility filtering remains a separate requirement. No HTTP wiring, writes or repository interface is introduced. [CATALOG_READS.md](CATALOG_READS.md) documents the exact contract and live checks.
+These internal reads return persisted rows without Track/AudioAsset queries; future public visibility filtering remains a separate requirement. Task 9 wires these reads to HTTP; no writes or repository interface is introduced. [CATALOG_READS.md](CATALOG_READS.md) documents the exact contract and live checks.
 
-## API boundaries
+## Artist and Album HTTP reads (Task 9)
 
-All endpoints below are prefixed /api/v1. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
+GET /api/artists, /api/artists/{id}, /api/albums and /api/albums/{id} use the same startup pool and concrete repository. Explicit JSON models preserve nullable biography/release_date and UTC timestamps. Handlers validate UUIDs and pagination, use a five-second child request context for SQL, and return sanitized JSON errors. /health and shutdown behavior remain unchanged. See [CATALOG_API.md](CATALOG_API.md) for the implemented contract and disposable tests.
+
+These development metadata routes return persisted Artist/Album rows, without Track/AudioAsset queries or active-track filtering. They are not the completed public discovery/eligibility implementation. There are no /api/v1 aliases for these four routes.
+
+## Planned API boundaries
+
+The remaining endpoints below are planned under /api/v1; Artist/Album reads use the implemented /api routes above. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
 
 - POST /auth/register, /auth/login, /auth/logout; GET /me. Opaque expiring database-backed sessions; logout revokes the session.
-- GET /artists, /artists/{id}, /albums, /albums/{id}, /tracks, /tracks/{id}; GET /search?q=... for grouped track/artist/album matches. Return safe credits/license links and stream URLs, not disk paths or private evidence.
+- GET /tracks, /tracks/{id}; GET /search?q=... for grouped track/artist/album matches. Return safe credits/license links and stream URLs, not disk paths or private evidence.
 - GET|HEAD /tracks/{id}/audio; check track and asset eligibility on every request, including ranges.
 - GET /me/saved-tracks; idempotent PUT|DELETE /me/saved-tracks/{trackId}.
 - GET|POST /me/playlists; GET|PATCH|DELETE /me/playlists/{id}; POST /me/playlists/{id}/items; DELETE /me/playlists/{id}/items/{itemId}; PUT /me/playlists/{id}/order with every current item ID in order.
@@ -67,7 +73,7 @@ Lists use limit/offset (default 20, maximum 100) and stable ordering with an ID 
 
 Playlist responses include a version. Every rename/delete/item/reorder mutation supplies the expected version. A transaction locks the parent, checks ownership/version, validates and mutates items, and increments the version; stale edits return 409. Adding items accepts a request ID unique within the playlist. Check an existing request ID after ownership but before version validation; an identical retry returns the existing item without another mutation. Explicit new requests may repeat a track. Reusing a key with different content returns 409.
 
-Use 201 for creation, 200 for reads/updates/identical retry results, 204 for deletion. Errors have {error: {code, message, requestId}}: 400 validation, 401 unauthenticated, 404 absent/inaccessible (including another owner's private ID), 409 conflict, 429 throttling and generic 500 unexpected failure. Do not expose SQL, secrets or paths.
+Use 201 for creation, 200 for reads/updates/identical retry results, 204 for deletion. Planned errors have {error: {code, message, requestId}} (Task 9 omits requestId until request tracing exists): 400 validation, 401 unauthenticated, 404 absent/inaccessible (including another owner's private ID), 409 conflict, 429 throttling and generic 500 unexpected failure. Do not expose SQL, secrets or paths.
 
 ## Playback and HTTP Range
 

@@ -9,14 +9,18 @@ import (
 	"net"
 	"net/http"
 	"time"
+
+	"github.com/leaf482/sonora/backend/internal/catalog"
 )
 
-func newServer(logger *slog.Logger) *http.Server {
+func newServer(logger *slog.Logger, repository *catalog.Repository) *http.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, "{\"status\":\"ok\"}\n")
 	})
+
+	registerCatalog(mux, repository, logger)
 
 	return &http.Server{
 		Handler:           mux,

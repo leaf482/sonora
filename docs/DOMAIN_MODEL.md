@@ -31,7 +31,7 @@ ID, primary artist ID, title, optional release date, timestamps. Has many tracks
 
 Rollback drops albums before artists, without CASCADE, and destroys their rows. The [disposable test procedure](MIGRATIONS.md) verifies rollback and reapply; it is not a data-preserving production recovery process.
 
-Task 8 exposes these Artist/Album fields through explicit [read models](CATALOG_READS.md), retaining NULL biography/release dates. Internal repository reads do not implement the future public active-track visibility rule.
+Task 8 exposes these Artist/Album fields through explicit [read models](CATALOG_READS.md), retaining NULL biography/release dates. Internal repository reads and the Task 9 [development metadata HTTP API](CATALOG_API.md) do not implement the future public active-track visibility rule.
 
 ## Track
 

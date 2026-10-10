@@ -19,7 +19,7 @@ func testLogger() *slog.Logger {
 }
 
 func TestHealth(t *testing.T) {
-	server := httptest.NewServer(newServer(testLogger()).Handler)
+	server := httptest.NewServer(newServer(testLogger(), nil).Handler)
 	defer server.Close()
 
 	for _, tt := range []struct {
@@ -136,7 +136,7 @@ func TestShutdownDrainsActiveRequest(t *testing.T) {
 	unblock := func() { once.Do(func() { close(release) }) }
 	t.Cleanup(unblock)
 
-	server := newServer(testLogger())
+	server := newServer(testLogger(), nil)
 	server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		close(entered)
 		<-release
@@ -165,7 +165,7 @@ func TestShutdownDrainsActiveRequest(t *testing.T) {
 
 func TestShutdownDeadlineClosesActiveRequest(t *testing.T) {
 	entered, requestCanceled := make(chan struct{}), make(chan struct{})
-	server := newServer(testLogger())
+	server := newServer(testLogger(), nil)
 	server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		close(entered)
 		<-r.Context().Done()
@@ -193,7 +193,7 @@ func TestServeWithCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	done := make(chan error, 1)
-	go func() { done <- serve(ctx, newServer(testLogger()), listener, time.Second) }()
+	go func() { done <- serve(ctx, newServer(testLogger(), nil), listener, time.Second) }()
 	if err := waitResult(t, done); err != nil {
 		t.Fatalf("already-canceled startup failed: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestServeReportsListenerFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
-	go func() { done <- serve(context.Background(), newServer(testLogger()), listener, time.Second) }()
+	go func() { done <- serve(context.Background(), newServer(testLogger(), nil), listener, time.Second) }()
 	if err := waitResult(t, done); !errors.Is(err, net.ErrClosed) {
 		t.Fatalf("serve error = %v, want closed-listener failure", err)
 	}
