@@ -31,6 +31,8 @@ ID, primary artist ID, title, optional release date, timestamps. Has many tracks
 
 Rollback drops albums before artists, without CASCADE, and destroys their rows. The [disposable test procedure](MIGRATIONS.md) verifies rollback and reapply; it is not a data-preserving production recovery process.
 
+Task 8 exposes these Artist/Album fields through explicit [read models](CATALOG_READS.md), retaining NULL biography/release dates. Internal repository reads do not implement the future public active-track visibility rule.
+
 ## Track
 
 ID, primary artist ID, optional album ID, title, display credits, duration milliseconds, optional disc/track numbers, state (draft/active/unavailable), timestamps. Standalone singles have no album or position; album tracks require positive disc/track numbers unique within (album_id, disc_number, track_number). Track and album primary artists may differ.

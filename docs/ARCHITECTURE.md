@@ -10,7 +10,7 @@ PostgreSQL stores metadata, provenance fields, constraints, sessions and user st
 
 ## Implemented backend foundation (Task 2)
 
-The Go module lives at `backend/` with executable sources/tests in `backend/cmd/server/` (module `github.com/leaf482/sonora/backend`, Go 1.25+). This is the only implemented service. The domain modules and other runtime components above remain planned; no empty domain packages are scaffolded.
+The Go module lives at `backend/` with executable sources/tests in `backend/cmd/server/` (module `github.com/leaf482/sonora/backend`, Go 1.25+). This is the only implemented service. Most domain behavior and the other runtime components above remain planned; internal/catalog now provides only the Artist/Album reads described below.
 
 - `PORT` defaults to 8080 only when unset. If present, it must contain decimal digits and resolve to 1–65535; empty, signed, whitespace-padded, out-of-range and overflowing values fail startup. The listener binds all local interfaces on that port.
 - `GET /health` returns 200, `Content-Type: application/json`, and `{"status":"ok"}`. It is a non-versioned process-liveness endpoint, not database/storage readiness. Standard Go routing also accepts HEAD without a body, rejects other methods with 405, and leaves unknown paths at 404.
@@ -24,7 +24,7 @@ Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Tas
 
 [compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves health-only startup. GET /health remains liveness, not dependency readiness.
 
-Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; repositories and runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
+Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; Task 8 adds only Artist/Album repository reads; other runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
 ## Explicit SQL migrations (Task 4)
 
@@ -45,6 +45,12 @@ Migration 00003 adds tracks and audio_assets: optional album relationships with 
 The separate backend/cmd/seed development command populates only the three pinned, rights-reviewed fixtures. It reuses DB configuration, validates all audio/evidence/license hashes, creates two credited artists and three standalone Track/AudioAsset pairs, and copies exact bytes into ignored private backend/.local/audio under stable generated keys. No albums are inferred.
 
 Records start draft/staged with the existing fixture-scope license decision, estimated frame durations and retained attribution/provenance. Transactional insert-only behavior preserves existing states; withdrawn/unavailable records never restore files or reactivate on rerun. Changed metadata or corrupt/missing files fail conservatively. This is not the future production ingestion/activation service. See [SEEDING.md](SEEDING.md) for exact commands, limits and disposable tests.
+
+## Artist and Album read repository (Task 8)
+
+backend/internal/catalog has a concrete Repository borrowing the existing *sql.DB, explicit Artist/Album read models, and four parameterized lookup/list queries. Missing rows are distinct from database failures. Lists use a default limit of 20, maximum 100, nonnegative offset, and name/title ordering with C collation plus UUID tie-breakers. Caller contexts propagate through query/scan/iteration errors and rows are closed.
+
+These internal reads return persisted rows without Track/AudioAsset queries; future public visibility filtering remains a separate requirement. No HTTP wiring, writes or repository interface is introduced. [CATALOG_READS.md](CATALOG_READS.md) documents the exact contract and live checks.
 
 ## API boundaries
 
