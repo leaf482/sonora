@@ -10,7 +10,7 @@ PostgreSQL stores metadata, provenance fields, constraints, sessions and user st
 
 ## Implemented backend foundation (Task 2)
 
-The Go module lives at `backend/` with executable sources/tests in `backend/cmd/server/` (module `github.com/leaf482/sonora/backend`, Go 1.25+). This is the only implemented service. Most domain behavior and the other runtime components above remain planned; internal/catalog now provides only the Artist/Album reads described below.
+The Go module lives at `backend/` with executable sources/tests in `backend/cmd/server/` (module `github.com/leaf482/sonora/backend`, Go 1.25+). This is the only implemented service. Most domain behavior and the other runtime components above remain planned; internal/catalog now provides the Artist/Album and Track/AudioAsset reads described below.
 
 - `PORT` defaults to 8080 only when unset. If present, it must contain decimal digits and resolve to 1–65535; empty, signed, whitespace-padded, out-of-range and overflowing values fail startup. The listener binds all local interfaces on that port.
 - `GET /health` returns 200, `Content-Type: application/json`, and `{"status":"ok"}`. It is a non-versioned process-liveness endpoint, not database/storage readiness. Standard Go routing also accepts HEAD without a body, rejects other methods with 405, and leaves unknown paths at 404.
@@ -24,7 +24,7 @@ Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Tas
 
 [compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves database-free startup; Task 9 catalog routes return JSON 503. GET /health remains liveness, not dependency readiness.
 
-Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; Task 8 adds only Artist/Album repository reads; other runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
+Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; Tasks 8 and 10 add Artist/Album and Track/AudioAsset repository reads; other runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
 ## Explicit SQL migrations (Task 4)
 
@@ -57,6 +57,12 @@ These internal reads return persisted rows without Track/AudioAsset queries; fut
 GET /api/artists, /api/artists/{id}, /api/albums and /api/albums/{id} use the same startup pool and concrete repository. Explicit JSON models preserve nullable biography/release_date and UTC timestamps. Handlers validate UUIDs and pagination, use a five-second child request context for SQL, and return sanitized JSON errors. /health and shutdown behavior remain unchanged. See [CATALOG_API.md](CATALOG_API.md) for the implemented contract and disposable tests.
 
 These development metadata routes return persisted Artist/Album rows, without Track/AudioAsset queries or active-track filtering. They are not the completed public discovery/eligibility implementation. There are no /api/v1 aliases for these four routes.
+
+## Track and AudioAsset read repository (Task 10)
+
+The same concrete repository now reads Track metadata, with bounded title/UUID ordering and optional artist/album filters, and internal AudioAsset metadata by track. Track models contain no storage/checksum/private provenance fields. The separate playback lookup enforces active Track, matching duration, ready file metadata, verified hosting/playback permission and unexpired license in a single database statement snapshot. Missing assets, unavailable assets and withdrawn assets are distinct from missing Tracks and query errors.
+
+These reads perform no file I/O or activation. A database-eligible asset is not proof of file existence, license suitability for a particular audience/territory/use, or browser compatibility. The future streaming service must check those conditions at use time. No new HTTP routes are wired. See [TRACK_READS.md](TRACK_READS.md) for contract and disposable tests.
 
 ## Planned API boundaries
 

@@ -67,3 +67,5 @@ try {
 A host-port race may require retrying with a new port. Cleanup removes only this unique disposable project.
 
 Verified on 2026-10-09 with PostgreSQL 17.11: empty lists, missing IDs, all persisted fields, NULL versus empty biography, optional release dates, default/min/max/last/past-end pagination, name/title ordering with UUID ties, malformed/injection-like IDs, canceled contexts, deadlines during lock-blocked queries, pool recovery, SQL errors and closed-pool errors. All passed; disposable container/network/volume were removed. Existing seed files, fixtures, migrations and HTTP behavior are unchanged.
+
+Task 10 extends the same concrete repository with [Track and AudioAsset reads](TRACK_READS.md). Artist/Album query and HTTP semantics remain unchanged.

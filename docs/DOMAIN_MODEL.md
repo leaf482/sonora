@@ -79,6 +79,8 @@ CHECK constraints enforce local values/completeness and readiness/withdrawal com
 
 The asset track/storage unique indexes cover their lookups/FK checks; no extra checksum/state/license indexes are justified yet. Rollback drops audio_assets before tracks without CASCADE and preserves artists/albums. It destroys new-table data and is exercised only in the disposable migration test.
 
+Task 10 adds [Track and AudioAsset reads](TRACK_READS.md) without changing this schema. Track metadata retains NULLs and lifecycle state but excludes storage and private provenance. Internal asset inspection retains unavailable/withdrawn metadata; a separate playback candidate lookup rejects inactive tracks, non-ready/unverified/expired assets and inconsistent durations. Scope and file checks remain future stream-time responsibilities; no record is activated by reading it.
+
 ## Playlist
 
 ID, owner user ID, name, positive monotonically increasing version, timestamps. Private in MVP; names may repeat even for one user. Owner-only reads/writes. Deletion cascades items; user deletion cascades playlists. Mutations require expected version, parent lock and transactional version increment; stale edits return 409.
