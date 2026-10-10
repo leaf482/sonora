@@ -64,12 +64,16 @@ The same concrete repository now reads Track metadata, with bounded title/UUID o
 
 These reads perform no file I/O or activation. A database-eligible asset is not proof of file existence, license suitability for a particular audience/territory/use, or browser compatibility. The future streaming service must check those conditions at use time. No new HTTP routes are wired. See [TRACK_READS.md](TRACK_READS.md) for contract and disposable tests.
 
+## Track HTTP reads (Task 11)
+
+GET /api/tracks and /api/tracks/{id} reuse the catalog handler conventions, startup pool and Track repository. Optional artist_id/album_id UUID filters combine with bounded pagination; ordering remains title then UUID. An explicit public response model preserves nullable metadata and excludes all AudioAsset storage, checksums and private provenance. Catalog Tracks remain visible regardless of audio availability, including draft/unavailable states. No playback query or stream is introduced. [CATALOG_API.md](CATALOG_API.md) documents validation, JSON/errors and live verification.
+
 ## Planned API boundaries
 
-The remaining endpoints below are planned under /api/v1; Artist/Album reads use the implemented /api routes above. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
+The remaining endpoints below are planned under /api/v1; Artist/Album/Track reads use the implemented /api routes above. Responses use JSON except the binary audio stream. Future discovery/search will apply its public eligibility rules; the implemented metadata reads preserve catalog visibility independently of audio availability. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
 
 - POST /auth/register, /auth/login, /auth/logout; GET /me. Opaque expiring database-backed sessions; logout revokes the session.
-- GET /tracks, /tracks/{id}; GET /search?q=... for grouped track/artist/album matches. Return safe credits/license links and stream URLs, not disk paths or private evidence.
+- GET /search?q=... for grouped track/artist/album matches. Return safe credits/license links and stream URLs, not disk paths or private evidence.
 - GET|HEAD /tracks/{id}/audio; check track and asset eligibility on every request, including ranges.
 - GET /me/saved-tracks; idempotent PUT|DELETE /me/saved-tracks/{trackId}.
 - GET|POST /me/playlists; GET|PATCH|DELETE /me/playlists/{id}; POST /me/playlists/{id}/items; DELETE /me/playlists/{id}/items/{itemId}; PUT /me/playlists/{id}/order with every current item ID in order.

@@ -20,7 +20,7 @@ import (
 
 func TestCatalogValidation(t *testing.T) {
 	h := newServer(testLogger(), nil).Handler
-	for _, resource := range []string{"artists", "albums"} {
+	for _, resource := range []string{"artists", "albums", "tracks"} {
 		base := "/api/" + resource
 		for _, suffix := range []string{"?limit=-1", "?limit=101", "?limit=", "?limit=1&limit=2", "?offset=-1", "?offset=", "?offset=0&offset=1", "?limit=+1", "?limit=1.0", "?offset=99999999999999999999999", "?unknown=1", "?limit=%zz", "?limit=1;offset=2", "/bad", "/00000000000040008000000000000001", "/00000000-0000-4000-8000-00000000000g", "/00000000-0000-4000-8000-000000000001?limit=1"} {
 			t.Run(resource+suffix, func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestCatalogDatabaseFailure(t *testing.T) {
 	}
 	db.Close()
 	h := newServer(testLogger(), catalog.NewRepository(db)).Handler
-	for _, path := range []string{"/api/artists", "/api/albums", "/api/artists/00000000-0000-4000-8000-000000000001", "/api/albums/00000000-0000-4000-8000-000000000001"} {
+	for _, path := range []string{"/api/tracks", "/api/tracks/00000000-0000-4000-8000-000000000001", "/api/artists", "/api/albums", "/api/artists/00000000-0000-4000-8000-000000000001", "/api/albums/00000000-0000-4000-8000-000000000001"} {
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, httptest.NewRequest("GET", path, nil))
 		assertAPIError(t, w, 500, "internal_error")

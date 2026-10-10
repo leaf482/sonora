@@ -37,7 +37,7 @@ Task 8 exposes these Artist/Album fields through explicit [read models](CATALOG_
 
 ID, primary artist ID, optional album ID, title, display credits, duration milliseconds, optional disc/track numbers, state (draft/active/unavailable), timestamps. Standalone singles have no album or position; album tracks require positive disc/track numbers unique within (album_id, disc_number, track_number). Track and album primary artists may differ.
 
-At most one AudioAsset per Track in MVP. Activation requires positive measured duration and a ready asset with verified applicable rights. Services enforce this cross-record rule transactionally. Public discovery excludes draft/unavailable tracks. Private collections/history retain unavailable placeholders with playback disabled. Restrict hard deletion of referenced tracks; if metadata removal is required, retain an ID tombstone with only permitted minimal display information.
+At most one AudioAsset per Track in MVP. Activation requires positive measured duration and a ready asset with verified applicable rights. Services enforce this cross-record rule transactionally. Future public discovery excludes draft/unavailable tracks. The Task 11 [Track metadata API](CATALOG_API.md) deliberately preserves all catalog lifecycle states regardless of audio availability; its response grants no playback eligibility. Private collections/history retain unavailable placeholders with playback disabled. Restrict hard deletion of referenced tracks; if metadata removal is required, retain an ID tombstone with only permitted minimal display information.
 
 ## AudioAsset
 

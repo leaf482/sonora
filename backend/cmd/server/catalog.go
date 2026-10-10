@@ -122,7 +122,7 @@ func parsePage(raw string) (catalog.Page, error) {
 }
 
 func registerCatalog(mux *http.ServeMux, repository *catalog.Repository, logger *slog.Logger) {
-	for _, resource := range []string{"artists", "albums"} {
+	for _, resource := range []string{"artists", "albums", "tracks"} {
 		for _, detail := range []bool{false, true} {
 			path := "/api/" + resource
 			if detail {
@@ -135,6 +135,7 @@ func registerCatalog(mux *http.ServeMux, repository *catalog.Repository, logger 
 					return
 				}
 				var page catalog.Page
+				var filter catalog.TrackFilter
 				if detail {
 					if !validUUID(r.PathValue("id")) || r.URL.RawQuery != "" {
 						catalogError(w, r, 400, "invalid_request", "Use a canonical UUID and no query parameters.")
@@ -142,9 +143,17 @@ func registerCatalog(mux *http.ServeMux, repository *catalog.Repository, logger 
 					}
 				} else {
 					var err error
-					page, err = parsePage(r.URL.RawQuery)
+					if resource == "tracks" {
+						page, filter, err = parseTrackQuery(r.URL.RawQuery)
+					} else {
+						page, err = parsePage(r.URL.RawQuery)
+					}
 					if err != nil {
-						catalogError(w, r, 400, "invalid_request", "Use limit 0..100 and a nonnegative offset, each at most once.")
+						message := "Use limit 0..100 and a nonnegative offset, each at most once."
+						if resource == "tracks" {
+							message = "Use limit 0..100, nonnegative offset and optional UUID artist_id/album_id, each at most once."
+						}
+						catalogError(w, r, 400, "invalid_request", message)
 						return
 					}
 				}
@@ -171,7 +180,7 @@ func registerCatalog(mux *http.ServeMux, repository *catalog.Repository, logger 
 						}
 						data = items
 					}
-				} else {
+				} else if resource == "albums" {
 					if detail {
 						var a catalog.Album
 						a, err = repository.Album(ctx, r.PathValue("id"))
@@ -185,7 +194,22 @@ func registerCatalog(mux *http.ServeMux, repository *catalog.Repository, logger 
 						}
 						data = items
 					}
+				} else {
+					if detail {
+						var track catalog.Track
+						track, err = repository.Track(ctx, r.PathValue("id"))
+						data = trackResponse(track)
+					} else {
+						var rows []catalog.Track
+						rows, err = repository.Tracks(ctx, page, filter)
+						items := make([]trackJSON, 0, len(rows))
+						for _, track := range rows {
+							items = append(items, trackResponse(track))
+						}
+						data = items
+					}
 				}
+
 				if err != nil {
 					switch {
 					case errors.Is(err, context.Canceled):
