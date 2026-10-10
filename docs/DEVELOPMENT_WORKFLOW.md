@@ -23,7 +23,7 @@ Reviewer receives the brief, complete change including untracked content, baseli
 - Capture git status --short before/after; inspect tracked and untracked changes. Never discard unrelated work.
 - Always run git diff --check and git status --short. Diff excludes untracked documents; inspect and whitespace-check them separately without staging.
 - For docs: confirm required files exist, relative links resolve, terminology/API/domain rules agree and statuses are accurate. Task 0 needs no application build.
-- The Go bootstrap commands are recorded below. PostgreSQL setup and the live smoke procedure are in [POSTGRESQL.md](POSTGRESQL.md). Explicit SQL migration commands and disposable apply/status verification are in [MIGRATIONS.md](MIGRATIONS.md). Frontend/browser commands will be added when those components exist; do not claim checks for unimplemented components.
+- The Go bootstrap commands are recorded below. PostgreSQL setup and the live smoke procedure are in [POSTGRESQL.md](POSTGRESQL.md). Explicit SQL migration commands and disposable apply/status verification are in [MIGRATIONS.md](MIGRATIONS.md). The explicit development fixture seed and its disposable verification are in [SEEDING.md](SEEDING.md). Frontend/browser commands will be added when those components exist; do not claim checks for unimplemented components.
 - Use disposable databases/storage and rights-documented fixtures; no destructive verification against user/production data. Keep secrets, private data and unapproved media out of reports/commits.
 - A blocked audio gate prevents dependent ingestion/public playback; only explicitly independent work may continue. Record missing evidence; never invent permission.
 

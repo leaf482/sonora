@@ -40,6 +40,12 @@ Migration 00003 adds tracks and audio_assets: optional album relationships with 
 
 [DOMAIN_MODEL.md](DOMAIN_MODEL.md) defines the implemented columns and enforcement boundary. Local CHECK/FK/unique constraints do not prove licensing or file existence. Activation, expiry/scope checks and atomic track/asset withdrawal remain future service responsibilities; no triggers, streaming, seeding or ingestion are introduced. [MIGRATIONS.md](MIGRATIONS.md) records disposable constraint/rollback/reapply verification.
 
+## Explicit development fixture seed (Task 7)
+
+The separate backend/cmd/seed development command populates only the three pinned, rights-reviewed fixtures. It reuses DB configuration, validates all audio/evidence/license hashes, creates two credited artists and three standalone Track/AudioAsset pairs, and copies exact bytes into ignored private backend/.local/audio under stable generated keys. No albums are inferred.
+
+Records start draft/staged with the existing fixture-scope license decision, estimated frame durations and retained attribution/provenance. Transactional insert-only behavior preserves existing states; withdrawn/unavailable records never restore files or reactivate on rerun. Changed metadata or corrupt/missing files fail conservatively. This is not the future production ingestion/activation service. See [SEEDING.md](SEEDING.md) for exact commands, limits and disposable tests.
+
 ## API boundaries
 
 All endpoints below are prefixed /api/v1. Responses use JSON except the binary audio stream. Public reads expose active catalog/attribution only. All /me endpoints require a session. Public playback is planned only if Task 1 verifies the intended audience/use; otherwise revise the contract before release.
