@@ -22,13 +22,13 @@ The HTTP server never imports Goose or runs migrations. Its optional DB startup 
 
 ## SQL conventions
 
-Files live in [backend/migrations/](../backend/migrations/). Use unique increasing numeric versions with five-digit filenames, starting at 00001_baseline.sql, followed by 00002_artists_albums.sql (next available: 00003_descriptive_name.sql). Reserve the next number against the current branch before merging. Do not renumber, remove or edit an applied migration; add a new correction migration. Goose records versions, not file checksums, so immutability depends on review and Git history.
+Files live in [backend/migrations/](../backend/migrations/). Use unique increasing numeric versions with five-digit filenames, starting at 00001_baseline.sql, followed by 00002_artists_albums.sql and 00003_tracks_audio_assets.sql (next available: 00004_descriptive_name.sql). Reserve the next number against the current branch before merging. Do not renumber, remove or edit an applied migration; add a new correction migration. Goose records versions, not file checksums, so immutability depends on review and Git history.
 
 Use standard -- +goose Up and -- +goose Down sections. Goose wraps each SQL migration in a transaction by default; keep that default. Review reversibility, data loss and deployment ordering before future schema changes. Do not add NO TRANSACTION or Go migrations without a concrete scoped need.
 
-The baseline executes SELECT 1 in each direction to verify the workflow. It creates no application objects, extensions or seed data. Task 5 adds artists/albums in version 00002; all other domain entities remain planned. See [DOMAIN_MODEL.md](DOMAIN_MODEL.md) for schema decisions.
+The baseline executes SELECT 1 in each direction to verify the workflow. It creates no application objects, extensions or seed data. Task 5 adds artists/albums in version 00002; Task 6 adds tracks/audio_assets in version 00003. Other domain entities remain planned. See [DOMAIN_MODEL.md](DOMAIN_MODEL.md) for schema decisions.
 
-Only up/status remain exposed by the command. There is no rollback/reset CLI command. The disposable integration test calls the pinned Goose Provider.Down method to verify version 00002 rollback, confirms baseline 00001 remains applied, then reapplies 00002 and reruns its constraints. Down drops both catalog tables and their data, with no CASCADE; it must never be used as a data-preserving recovery procedure. For failed transactional SQL, correct an unapplied migration, inspect status and retry; never modify a version already applied anywhere shared. Earlier successful migrations stay applied if a later one fails. For future deployed schema fixes, prefer a reviewed forward migration; destructive recovery requires a separately scoped plan and backup. Errors omit raw driver/server text and connection strings; check the file/permissions and inspect PostgreSQL logs locally when diagnosing, without publishing credentials.
+Only up/status remain exposed by the command. There is no rollback/reset CLI command. The disposable integration test calls the pinned Goose Provider.Down method to verify version 00003 rollback, confirms existing Artist/Album rows survive, then reapplies 00003 and reruns its constraints. It also rolls back 00003 then 00002 in dependency order and reapplies both to preserve earlier regression coverage. Down drops the selected migration’s tables and data, with no CASCADE; it must never be used as a data-preserving recovery procedure. For failed transactional SQL, correct an unapplied migration, inspect status and retry; never modify a version already applied anywhere shared. Earlier successful migrations stay applied if a later one fails. For future deployed schema fixes, prefer a reviewed forward migration; destructive recovery requires a separately scoped plan and backup. Errors omit raw driver/server text and connection strings; check the file/permissions and inspect PostgreSQL logs locally when diagnosing, without publishing credentials.
 
 ## Fresh local database
 
@@ -44,7 +44,7 @@ go run ./cmd/migrate status
 go run ./cmd/server
 ```
 
-On a fresh database expect versions 00001/00002 pending, two applied migrations, then both applied. On a Task 4 database, only 00002 is pending and one migration is applied. Stop the backend with Ctrl+C. From the repository root, docker compose down stops PostgreSQL while preserving the volume. Starting it again and applying migrations preserves existing versions. Do not erase an existing development volume merely to run migrations. For a fresh disposable test, use the isolated procedure below.
+On a fresh database expect versions 00001/00002/00003 pending, three applied migrations, then all applied. On a Task 5 database, only 00003 is pending and one migration is applied. Stop the backend with Ctrl+C. From the repository root, docker compose down stops PostgreSQL while preserving the volume. Starting it again and applying migrations preserves existing versions. Do not erase an existing development volume merely to run migrations. For a fresh disposable test, use the isolated procedure below.
 
 ## Verification
 
@@ -87,8 +87,10 @@ try {
 }
 ```
 
-The free-port selection has a small bind race; rerun on a new port if another process claims it. The test checks initial pending status, first apply, applied status, repeated apply with no new bookkeeping rows, schema constraints, absence of unexpected tables, rollback of version 00002, baseline preservation, reapply and the same constraint checks afterward. Only the uniquely named disposable project is removed. If Docker is unavailable, report this live test as blocked.
+The free-port selection has a small bind race; rerun on a new port if another process claims it. The test checks initial pending status, first apply, applied status, repeated apply with no new bookkeeping rows, schema constraints, absence of unexpected tables, rollback/reapply of version 00003 with Artist/Album preservation, plus the earlier version 00002 regression checks. Only the uniquely named disposable project is removed. If Docker is unavailable, report this live test as blocked.
 
-Task 5 verified on 2026-10-09 with PostgreSQL 17.11: pending -> applied (two migrations) -> repeated apply (zero); bookkeeping unchanged. Valid/repeated-name inserts, optional metadata, UUID primary keys, NOT NULL/check/FK violations and explicit artist reassignment passed. Down removed artists/albums, preserved baseline 00001, and marked 00002 pending. Reapply restored 00002 and passed all schema checks again. The disposable container/network/volume were removed.
+Task 6 verified on 2026-10-09 with PostgreSQL 17.11: three migrations apply, repeated apply reports zero, and status reports all three applied. Track/asset valid records, optional/unknown metadata, FK/unique/NOT NULL/value checks, verified provenance completeness, readiness and atomic withdrawal with retained metadata passed. Version 00003 rollback preserved earlier Artist/Album rows; reapply passed the same checks. Earlier catalog rollback/reapply checks also passed. The disposable container/network/volume were removed.
+
+Licensed fixture verification used the [manifest procedure](../fixtures/audio/README.md): all three audio files and five retained evidence/license files matched sizes and SHA-256 hashes. Fixture files/permissions were not changed or seeded into the database.
 
 Reference: [Goose provider documentation](https://pressly.github.io/goose/documentation/provider/). Dependency versions are pinned in [go.mod](../backend/go.mod) and [go.sum](../backend/go.sum).

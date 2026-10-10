@@ -4,7 +4,7 @@
 
 Opaque server-generated UUIDs and UTC timestamps. Catalog records are operator-managed, not listener-owned. Private records belong to one User. Titles/names are not globally unique. Foreign keys enforce references; no entity stores audio bytes.
 
-This is the full logical model. Task 5 implements only Artist and Album in [00002_artists_albums.sql](../backend/migrations/00002_artists_albums.sql); the other entities remain planned. Sessions are a supporting identity table (user, token hash, expiry). Required license provenance is structured AudioAsset metadata with references to retained evidence files.
+This is the full logical model. Tasks 5–6 implement Artist/Album in [00002_artists_albums.sql](../backend/migrations/00002_artists_albums.sql) and Track/AudioAsset in [00003_tracks_audio_assets.sql](../backend/migrations/00003_tracks_audio_assets.sql); the other entities remain planned. Sessions are a supporting identity table (user, token hash, expiry). Required license provenance is structured AudioAsset metadata with references to retained evidence files.
 
 ## User
 
@@ -22,10 +22,10 @@ ID, primary artist ID, title, optional release date, timestamps. Has many tracks
 
 - artists: explicit uuid id primary key, required text name, nullable text biography, required created_at/updated_at timestamptz.
 - albums: explicit uuid id primary key, required primary_artist_id referencing artists.id, required text title, nullable date release_date, required created_at/updated_at timestamptz.
-- UUIDs are supplied by the future server/operator code; no sequence, UUID extension or database-generated ID default. These independent keys will let Tracks reference artists and optional albums without requiring their primary artists to match.
+- UUIDs are supplied by the future server/operator code; no sequence, UUID extension or database-generated ID default. Tracks reference these independent keys without requiring track and album primary artists to match.
 - Names/titles reject empty or ordinary-space-only strings using length(btrim(...)) > 0. They are not unique, including album titles within one artist. No arbitrary maximum length, slug, artwork, genre or partial-date representation is introduced. Broader Unicode whitespace normalization belongs to future input validation.
 - Both timestamps default to CURRENT_TIMESTAMP on insert. timestamptz represents an absolute instant (UTC internally; display follows the session timezone). Writers must explicitly maintain updated_at on mutation; there are no update triggers.
-- An album requires one existing primary artist. ON DELETE RESTRICT / ON UPDATE RESTRICT prevents deleting or changing a referenced artist ID; corrections reassign album.primary_artist_id explicitly. Albums can be deleted now; the future Track migration must restrict deletion of referenced albums.
+- An album requires one existing primary artist. ON DELETE RESTRICT / ON UPDATE RESTRICT prevents deleting or changing a referenced artist ID; corrections reassign album.primary_artist_id explicitly. Task 6 restricts deletion of albums referenced by tracks.
 - Primary keys create their own indexes. The sole additional index, albums_primary_artist_id_idx, supports artist album lookup and FK reference checks. No speculative search/title/date indexes.
 - Unknown biography/release_date is NULL. A known release date uses PostgreSQL date; do not manufacture a month/day for a year-only source. Visibility based on active tracks remains future service behavior.
 
@@ -44,6 +44,38 @@ ID, unique track ID, unique generated storage key, checksum, MIME/codec, byte le
 Before verified: source provider/page/download reference; creator/rights-holder credits; acquisition time; license name/version/URL; preserved evidence reference; reviewer/date/rationale; exact permitted use/restrictions for hosting, streaming, redistribution, commercial use, audience/territory, expiry and modifications; required attribution text/links. Unknown permission blocks verification. Preserve evidence for the exact served bytes. A replacement file requires renewed validation and retained prior provenance.
 
 Staged files are never served. Ready requires a complete validated file and verified rights. A recorded file failure, rejection or withdrawal makes the asset and track unavailable transactionally. Stream-time eligibility includes applicable expiry/use conditions. Keep provenance when removing media; disable access before purging and evaluate backup/retention obligations. Jamendo/FMA are candidates only; [PROJECT_PLAN.md](PROJECT_PLAN.md) owns the licensing gate.
+
+## Implemented Track/AudioAsset decisions (Task 6)
+
+### Tracks
+
+tracks uses explicit UUID keys, required primary_artist_id/title/state and timestamps. display_credits and duration_ms are nullable for drafts or unavailable records; known duration must be positive, and active requires a known positive duration. State defaults to draft. Standalone tracks have NULL album_id/disc_number/track_number. Album tracks require all three with positive positions; the unique (album_id, disc_number, track_number) constraint allows repeated track titles and multiple singles. No relation requires the album and track artists to match.
+
+Artist/album FKs restrict deletion and ID updates. The only extra track index is primary_artist_id; the album-position unique index already covers album reference checks. IDs/timestamps use the same conventions as Artist/Album; writers maintain updated_at explicitly.
+
+### Audio files and availability
+
+audio_assets has an explicit UUID primary key and unique required track_id (one per track) and storage_key. A key is a lowercase generated flat filename (letters/digits/underscore/hyphen, optional single extension), not a directory, absolute path or URL. Future file access must resolve it beneath private storage and handle symlinks safely. Bytes remain outside PostgreSQL.
+
+Required technical metadata describes acquired bytes even while staged: lowercase 64-hex sha256, audio/* mime_type, nonblank codec, positive bigint byte_length/duration_ms, acquired_at and timestamps. Format strings are descriptive, not a codec decoder or browser-support guarantee. Checksum is not unique: identical bytes can legitimately appear in separate track/provenance records. A draft Track may exist before an AudioAsset is acquired.
+
+file_state defaults to staged; license_decision defaults to pending. ready requires verified rights plus hosting_permitted/playback_permitted true. unavailable requires unavailable_at/reason and retains the same ID, track, storage key, checksum and provenance; other file states require those current-unavailability fields to be NULL. This represents missing/inaccessible bytes without falsely withdrawing the license. rejected decisions also require unavailable. withdrawn additionally requires withdrawn_at/withdrawal_reason and unavailable. Reinstatement is a future explicit re-review operation, not a deletion/reinsert; preserve prior evidence externally before changing decisions or replacing files.
+
+Deleting or changing an asset-referenced Track is restricted. This migration introduces no metadata purge, cascades, soft-delete flag or audio blob. Unavailability is a state change, not SQL DELETE. Row deletion by a privileged operator remains technically possible; retention/purge policy is a future service responsibility.
+
+### Asset-specific license provenance
+
+Provenance columns may be NULL while pending, so unknown rights are never silently granted. A non-pending decision requires reviewed_by, reviewed_at and review_rationale. verified additionally requires nonblank source_provider/source_url/download_reference, creator_credits/rights_holder_credits, license_name/version/url, evidence_url and evidence_reference, plus audience_scope, territory_scope, license_term, use_conditions, attribution and modifications. Use an explicit applicable value such as “unversioned grant” or “no modifications”; do not fabricate a version or permission to fill a field. Evidence references point to retained files for the exact checksum, not provider-wide approval.
+
+hosting_permitted, playback_permitted, redistribution_permitted and commercial_use_permitted are nullable booleans: NULL unknown, false prohibited, true allowed **within the recorded scope and conditions**. All four must be known for verified; redistribution/commercial use may remain false even for a ready asset. No license name or provider automatically sets any permission. license_expires_at may be NULL; license_term must explain no fixed expiry for verified records. Expiry and audience/territory/commercial suitability must be checked at use time, not with time-dependent CHECK constraints.
+
+The fixture manifest's per-asset source/download, creator, license reference, evidence path, attribution, modifications, acquisition, size and hash map to these columns; license-level conditions can inform a recorded asset-specific review, never replace it. The manifest's fixture-only scope and pending public-release gate remain unchanged. No fixture rows are seeded, no files are acquired and no new rights decisions are made by this migration.
+
+### Database versus future service responsibilities
+
+CHECK constraints enforce local values/completeness and readiness/withdrawal combinations, not truth of evidence, file existence, legal applicability, immutability or historical retention. Cross-record activation (active Track has ready AudioAsset, matching measured duration and applicable rights) and withdrawing both rows must be performed by a future service in one transaction. There are no cross-table triggers. The live test demonstrates that transaction while retaining the asset's provenance, and deliberately uses synthetic permission text rather than claiming a real license.
+
+The asset track/storage unique indexes cover their lookups/FK checks; no extra checksum/state/license indexes are justified yet. Rollback drops audio_assets before tracks without CASCADE and preserves artists/albums. It destroys new-table data and is exercised only in the disposable migration test.
 
 ## Playlist
 

@@ -24,7 +24,7 @@ Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Tas
 
 [compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves health-only startup. GET /health remains liveness, not dependency readiness.
 
-Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Task 5 adds only artists/albums tables; repositories and runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
+Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Tasks 5–6 add artists/albums/tracks/audio_assets tables; repositories and runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
 ## Explicit SQL migrations (Task 4)
 
@@ -32,7 +32,13 @@ The separate backend/cmd/migrate command uses pinned Goose v3.26.0 with the exis
 
 ## Artist and Album schema (Task 5)
 
-Migration 00002 adds artists/albums with explicit UUID keys, required names/titles and timestamps, optional biography/release_date, and a required restricted album-to-artist FK. Only primary-key indexes and the album artist-reference index are included. [DOMAIN_MODEL.md](DOMAIN_MODEL.md) records nullability, repeated names/titles, timestamp maintenance and future Track relationships. No other domain tables or runtime catalog behavior are implemented.
+Migration 00002 adds artists/albums with explicit UUID keys, required names/titles and timestamps, optional biography/release_date, and a required restricted album-to-artist FK. Only primary-key indexes and the album artist-reference index are included. [DOMAIN_MODEL.md](DOMAIN_MODEL.md) records nullability, repeated names/titles, timestamp maintenance and future Track relationships. Task 6 extends these references as described below; runtime catalog behavior remains unimplemented.
+
+## Track and AudioAsset schema (Task 6)
+
+Migration 00003 adds tracks and audio_assets: optional album relationships with unique disc/track positions, one asset per track, private filesystem keys and required file integrity metadata. Separate file availability and license-decision states retain metadata on failure/withdrawal. Verified provenance requires explicit asset-specific evidence, attribution, permitted uses and scope; unknown permissions default to NULL. No media bytes enter PostgreSQL.
+
+[DOMAIN_MODEL.md](DOMAIN_MODEL.md) defines the implemented columns and enforcement boundary. Local CHECK/FK/unique constraints do not prove licensing or file existence. Activation, expiry/scope checks and atomic track/asset withdrawal remain future service responsibilities; no triggers, streaming, seeding or ingestion are introduced. [MIGRATIONS.md](MIGRATIONS.md) records disposable constraint/rollback/reapply verification.
 
 ## API boundaries
 

@@ -75,7 +75,8 @@ func TestMigrationsLive(t *testing.T) {
 	}
 	check("status", "00001 pending")
 	check("status", "00002 pending")
-	check("up", "applied 2 migration(s)")
+	check("status", "00003 pending")
+	check("up", "applied 3 migration(s)")
 	check("status", "00001 applied")
 	check("status", "00002 applied")
 	var before int
@@ -89,10 +90,15 @@ func TestMigrationsLive(t *testing.T) {
 	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM goose_db_version").Scan(&after); err != nil || before != after {
 		t.Fatal("repeated apply changed bookkeeping")
 	}
-	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name NOT IN ('goose_db_version', 'artists', 'albums')").Scan(&count); err != nil || count != 0 {
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name NOT IN ('goose_db_version', 'artists', 'albums', 'tracks', 'audio_assets')").Scan(&count); err != nil || count != 0 {
 		t.Fatal("migrations created unexpected tables")
 	}
 	checkCatalogSchema(t, ctx, db)
+	if _, err := db.ExecContext(ctx, "INSERT INTO artists (id, name) VALUES ('10000000-0000-4000-8000-000000000003', 'Different track artist')"); err != nil {
+		t.Fatal(err)
+	}
+	check("status", "00003 applied")
+	checkTrackAssetSchema(t, ctx, db)
 	locker, err := lock.NewPostgresSessionLocker()
 	if err != nil {
 		t.Fatal(err)
@@ -100,6 +106,32 @@ func TestMigrationsLive(t *testing.T) {
 	provider, err := goose.NewProvider(goose.DialectPostgres, db, os.DirFS("migrations"),
 		goose.WithSessionLocker(locker), goose.WithDisableGlobalRegistry(true))
 	if err != nil {
+		t.Fatal(err)
+	}
+	// Roll back only the new migration and verify earlier catalog rows survive.
+	newest, err := provider.Down(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if newest.Source.Version != 3 {
+		t.Fatal("expected rollback of version 3")
+	}
+	check("status", "00002 applied")
+	check("status", "00003 pending")
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('tracks', 'audio_assets')").Scan(&count); err != nil || count != 0 {
+		t.Fatal("rollback left new tables")
+	}
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM albums").Scan(&count); err != nil || count != 2 {
+		t.Fatal("rollback changed earlier albums")
+	}
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM artists").Scan(&count); err != nil || count != 2 {
+		t.Fatal("rollback changed earlier artists")
+	}
+	check("up", "applied 1 migration(s)")
+	check("status", "00003 applied")
+	checkTrackAssetSchema(t, ctx, db)
+	// Preserve the previous version-2 rollback/reapply coverage, in dependency order.
+	if _, err := provider.Down(ctx); err != nil {
 		t.Fatal(err)
 	}
 	result, err := provider.Down(ctx)
@@ -115,9 +147,14 @@ func TestMigrationsLive(t *testing.T) {
 		t.Fatal("rollback left catalog tables")
 	}
 	t.Log("rollback removed artists/albums and preserved baseline")
-	check("up", "applied 1 migration(s)")
+	check("up", "applied 2 migration(s)")
 	check("status", "00002 applied")
 	checkCatalogSchema(t, ctx, db)
+	if _, err := db.ExecContext(ctx, "INSERT INTO artists (id, name) VALUES ('10000000-0000-4000-8000-000000000003', 'Different track artist')"); err != nil {
+		t.Fatal(err)
+	}
+	check("status", "00003 applied")
+	checkTrackAssetSchema(t, ctx, db)
 	t.Log("reapply restored schema and constraints")
 
 }

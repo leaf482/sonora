@@ -1,6 +1,6 @@
 # Local PostgreSQL development
 
-Task 3 adds only a database process and backend connectivity. Task 4 adds the separate [migration workflow](MIGRATIONS.md); Task 5 adds only Artist/Album tables through migrations. Repositories and runtime application queries remain unimplemented. `GET /health` remains process liveness: 200 with `{"status":"ok"}`; it does not ping PostgreSQL on each request or become a readiness endpoint.
+Task 3 adds only a database process and backend connectivity. Task 4 adds the separate [migration workflow](MIGRATIONS.md); Tasks 5–6 add Artist/Album/Track/AudioAsset tables through migrations. Repositories and runtime application queries remain unimplemented. `GET /health` remains process liveness: 200 with `{"status":"ok"}`; it does not ping PostgreSQL on each request or become a readiness endpoint.
 
 ## Configuration
 
