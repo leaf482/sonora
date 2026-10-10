@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/leaf482/sonora/backend/internal/postgres"
+	"github.com/pressly/goose/v3"
+	"github.com/pressly/goose/v3/lock"
 )
 
 func TestCommandValidation(t *testing.T) {
@@ -72,19 +74,50 @@ func TestMigrationsLive(t *testing.T) {
 		t.Log(strings.TrimSpace(output.String()))
 	}
 	check("status", "00001 pending")
-	check("up", "applied 1 migration(s)")
+	check("status", "00002 pending")
+	check("up", "applied 2 migration(s)")
 	check("status", "00001 applied")
+	check("status", "00002 applied")
 	var before int
 	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM goose_db_version").Scan(&before); err != nil {
 		t.Fatal("cannot inspect migration bookkeeping")
 	}
 	check("up", "applied 0 migration(s)")
 	check("status", "00001 applied")
+	check("status", "00002 applied")
 	var after int
 	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM goose_db_version").Scan(&after); err != nil || before != after {
 		t.Fatal("repeated apply changed bookkeeping")
 	}
-	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name <> 'goose_db_version'").Scan(&count); err != nil || count != 0 {
-		t.Fatal("baseline created unexpected tables")
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name NOT IN ('goose_db_version', 'artists', 'albums')").Scan(&count); err != nil || count != 0 {
+		t.Fatal("migrations created unexpected tables")
 	}
+	checkCatalogSchema(t, ctx, db)
+	locker, err := lock.NewPostgresSessionLocker()
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider, err := goose.NewProvider(goose.DialectPostgres, db, os.DirFS("migrations"),
+		goose.WithSessionLocker(locker), goose.WithDisableGlobalRegistry(true))
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := provider.Down(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Source.Version != 2 {
+		t.Fatalf("rolled back version %d, want 2", result.Source.Version)
+	}
+	check("status", "00001 applied")
+	check("status", "00002 pending")
+	if err := db.QueryRowContext(ctx, "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name <> 'goose_db_version'").Scan(&count); err != nil || count != 0 {
+		t.Fatal("rollback left catalog tables")
+	}
+	t.Log("rollback removed artists/albums and preserved baseline")
+	check("up", "applied 1 migration(s)")
+	check("status", "00002 applied")
+	checkCatalogSchema(t, ctx, db)
+	t.Log("reapply restored schema and constraints")
+
 }

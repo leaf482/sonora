@@ -24,11 +24,15 @@ Run/test commands are in [DEVELOPMENT_WORKFLOW.md](DEVELOPMENT_WORKFLOW.md). Tas
 
 [compose.yaml](../compose.yaml) provides PostgreSQL 17.11, a persistent named volume and a TCP healthcheck, bound to host loopback only. The backend accepts optional DATABASE_URL plus DB_CONNECT_TIMEOUT (default 5s, maximum 30s). If configured, an authenticated startup ping must succeed before HTTP listens; a failed or malformed configuration exits clearly without logging credentials. Unset DATABASE_URL preserves health-only startup. GET /health remains liveness, not dependency readiness.
 
-Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. There are no application tables, repositories or application queries yet. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
+Connection setup is shared in backend/internal/postgres/database.go and uses database/sql with the pinned pgx driver, a bounded pool (five open/two idle), and close after HTTP shutdown. Task 5 adds only artists/albums tables; repositories and runtime application queries remain unimplemented. The local Compose initialization role is for development only. See [POSTGRESQL.md](POSTGRESQL.md) for configuration, volume persistence/reset, and a disposable live smoke procedure.
 
 ## Explicit SQL migrations (Task 4)
 
 The separate backend/cmd/migrate command uses pinned Goose v3.26.0 with the existing pgx driver and shared DATABASE_URL/DB_CONNECT_TIMEOUT helpers. It exposes up/status from backend/, reads versioned SQL in backend/migrations/, bounds execution to one minute and uses Goose's PostgreSQL session advisory lock for apply. SQL migrations are transactional by default. The baseline only executes SELECT 1; goose_db_version is infrastructure bookkeeping, not a domain table. Status may initialize that bookkeeping table on a fresh database. Server startup does not run migrations, and schema readiness checks remain planned. See [MIGRATIONS.md](MIGRATIONS.md) for conventions and disposable verification.
+
+## Artist and Album schema (Task 5)
+
+Migration 00002 adds artists/albums with explicit UUID keys, required names/titles and timestamps, optional biography/release_date, and a required restricted album-to-artist FK. Only primary-key indexes and the album artist-reference index are included. [DOMAIN_MODEL.md](DOMAIN_MODEL.md) records nullability, repeated names/titles, timestamp maintenance and future Track relationships. No other domain tables or runtime catalog behavior are implemented.
 
 ## API boundaries
 

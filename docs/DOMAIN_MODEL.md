@@ -4,7 +4,7 @@
 
 Opaque server-generated UUIDs and UTC timestamps. Catalog records are operator-managed, not listener-owned. Private records belong to one User. Titles/names are not globally unique. Foreign keys enforce references; no entity stores audio bytes.
 
-This is a logical model, not a migration. Sessions are a supporting identity table (user, token hash, expiry). Required license provenance is structured AudioAsset metadata with references to retained evidence files.
+This is the full logical model. Task 5 implements only Artist and Album in [00002_artists_albums.sql](../backend/migrations/00002_artists_albums.sql); the other entities remain planned. Sessions are a supporting identity table (user, token hash, expiry). Required license provenance is structured AudioAsset metadata with references to retained evidence files.
 
 ## User
 
@@ -17,6 +17,19 @@ ID, name, optional biography, timestamps. Has many albums/tracks. MVP uses one p
 ## Album
 
 ID, primary artist ID, title, optional release date, timestamps. Has many tracks; titles may repeat. Public albums/artists are visible only when associated with active tracks. Optional artwork requires separately verified rights; omit otherwise. Restrict album deletion while tracks reference it; operator corrections must explicitly reassign tracks first.
+
+## Implemented catalog schema decisions (Task 5)
+
+- artists: explicit uuid id primary key, required text name, nullable text biography, required created_at/updated_at timestamptz.
+- albums: explicit uuid id primary key, required primary_artist_id referencing artists.id, required text title, nullable date release_date, required created_at/updated_at timestamptz.
+- UUIDs are supplied by the future server/operator code; no sequence, UUID extension or database-generated ID default. These independent keys will let Tracks reference artists and optional albums without requiring their primary artists to match.
+- Names/titles reject empty or ordinary-space-only strings using length(btrim(...)) > 0. They are not unique, including album titles within one artist. No arbitrary maximum length, slug, artwork, genre or partial-date representation is introduced. Broader Unicode whitespace normalization belongs to future input validation.
+- Both timestamps default to CURRENT_TIMESTAMP on insert. timestamptz represents an absolute instant (UTC internally; display follows the session timezone). Writers must explicitly maintain updated_at on mutation; there are no update triggers.
+- An album requires one existing primary artist. ON DELETE RESTRICT / ON UPDATE RESTRICT prevents deleting or changing a referenced artist ID; corrections reassign album.primary_artist_id explicitly. Albums can be deleted now; the future Track migration must restrict deletion of referenced albums.
+- Primary keys create their own indexes. The sole additional index, albums_primary_artist_id_idx, supports artist album lookup and FK reference checks. No speculative search/title/date indexes.
+- Unknown biography/release_date is NULL. A known release date uses PostgreSQL date; do not manufacture a month/day for a year-only source. Visibility based on active tracks remains future service behavior.
+
+Rollback drops albums before artists, without CASCADE, and destroys their rows. The [disposable test procedure](MIGRATIONS.md) verifies rollback and reapply; it is not a data-preserving production recovery process.
 
 ## Track
 
